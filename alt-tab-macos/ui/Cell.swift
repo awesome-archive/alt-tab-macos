@@ -1,85 +1,117 @@
 import Cocoa
+import WebKit
+
+typealias MouseDownCallback = (TrackedWindow) -> Void
+typealias MouseMovedCallback = (Cell) -> Void
 
 class Cell: NSCollectionViewItem {
     var thumbnail = NSImageView()
-    var icon = NSImageView()
-    var text = NSTextView()
-    var openWindow: OpenWindow?
-    var mouseDownCallback: ((OpenWindow) -> Void)?
+    var appIcon = NSImageView()
+    var label = CellTitle(Preferences.fontHeight!)
+    var minimizedIcon = FontIcon(FontIcon.sfSymbolCircledMinusSign, Preferences.fontIconSize, .white)
+    var hiddenIcon = FontIcon(FontIcon.sfSymbolCircledDotSign, Preferences.fontIconSize, .white)
+    var spaceIcon = FontIcon(FontIcon.sfSymbolCircledNumber0, Preferences.fontIconSize, .white)
+    var openWindow: TrackedWindow?
+    var mouseDownCallback: MouseDownCallback?
+    var mouseMovedCallback: MouseMovedCallback?
+
+    override func loadView() {
+        let hStackView = makeHStackView()
+        let vStackView = makeVStackView(hStackView)
+        let shadow = Cell.makeShadow(.gray)
+        thumbnail.shadow = shadow
+        appIcon.shadow = shadow
+        view = vStackView
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        mouseMovedCallback!(self)
+    }
 
     override func mouseDown(with theEvent: NSEvent) {
         mouseDownCallback!(openWindow!)
     }
 
-    override func loadView() {
-        let vStackView = NSStackView()
-        vStackView.wantsLayer = true
-        vStackView.layer!.borderWidth = cellBorderWidth
-        vStackView.layer!.borderColor = .clear
-        vStackView.edgeInsets = NSEdgeInsets(top: cellPadding, left: cellPadding, bottom: cellPadding, right: cellPadding)
-        vStackView.orientation = .vertical
-        vStackView.spacing = interItemPadding
-        let hStackView = NSStackView()
-        hStackView.spacing = interItemPadding
-        let textStorage = NSTextStorage()
-        let layoutManager = NSLayoutManager()
-        textStorage.addLayoutManager(layoutManager)
-        let textContainer = NSTextContainer()
-        textContainer.maximumNumberOfLines = 1
-        textContainer.lineFragmentPadding = 0
-        layoutManager.addTextContainer(textContainer)
-        text = NSTextView.init(frame: NSRect.zero, textContainer: textContainer)
-        text.drawsBackground = true
-        text.backgroundColor = .clear
-        text.isSelectable = false
-        text.isEditable = false
-        text.font = font
-        text.textColor = highlightColor
-        let shadow = NSShadow()
-        shadow.shadowColor = .darkGray
-        shadow.shadowOffset = NSMakeSize(0, 0)
-        shadow.shadowBlurRadius = 1
-        text.shadow = shadow
-        text.enabledTextCheckingTypes = 0
-        let paragraphStyle = NSParagraphStyle.default.mutableCopy() as! NSMutableParagraphStyle
-        paragraphStyle.lineBreakMode = .byTruncatingTail
-        paragraphStyle.maximumLineHeight = fontHeight
-        paragraphStyle.minimumLineHeight = fontHeight
-        paragraphStyle.allowsDefaultTighteningForTruncation = false
-        text.defaultParagraphStyle = paragraphStyle
-        text.heightAnchor.constraint(equalToConstant: fontHeight).isActive = true
-        let shadow2 = NSShadow()
-        shadow2.shadowColor = .gray
-        shadow2.shadowOffset = NSMakeSize(0, 0)
-        shadow2.shadowBlurRadius = 1
-        thumbnail.shadow = shadow2
-        icon.shadow = shadow2
-        hStackView.addView(icon, in: .leading)
-        hStackView.addView(text, in: .leading)
-        vStackView.addView(hStackView, in: .leading)
-        vStackView.addView(thumbnail, in: .leading)
-        view = vStackView
-    }
-
     override var isSelected: Bool {
         didSet {
-            view.layer!.borderColor = isSelected ? highlightColor.cgColor : .clear
+            view.layer!.backgroundColor = isSelected ? Preferences.highlightBackgroundColor!.cgColor : .clear
+            view.layer!.borderColor = isSelected ? Preferences.highlightBorderColor!.cgColor : .clear
         }
     }
 
-    func updateWithNewContent(_ element: OpenWindow, _ fn: @escaping (OpenWindow) -> Void) {
+    func updateWithNewContent(_ element: TrackedWindow, _ mouseDownCallback: @escaping MouseDownCallback, _ mouseMovedCallback: @escaping MouseMovedCallback, _ screen: NSScreen) {
         openWindow = element
         thumbnail.image = element.thumbnail
-        let (width, height) = computeDownscaledSize(element.thumbnail)
-        thumbnail.image!.size = NSSize(width: width, height: height)
+        let (width, height) = Cell.computeDownscaledSize(element.thumbnail, screen)
+        thumbnail.image?.size = NSSize(width: width, height: height)
         thumbnail.frame.size = NSSize(width: width, height: height)
-        icon.image = element.icon
-        icon.image!.size = NSSize(width: iconSize, height: iconSize)
-        icon.frame.size = NSSize(width: iconSize, height: iconSize)
-        text.string = element.cgTitle
+        appIcon.image = element.icon
+        appIcon.image?.size = NSSize(width: Preferences.iconSize!, height: Preferences.iconSize!)
+        appIcon.frame.size = NSSize(width: Preferences.iconSize!, height: Preferences.iconSize!)
+        label.string = element.title
         // workaround: setting string on NSTextView change the font (most likely a Cocoa bug)
-        text.font = font
-        text.textContainer!.size.width = thumbnail.frame.size.width - iconSize - interItemPadding
-        mouseDownCallback = fn
+        label.font = Preferences.font!
+        hiddenIcon.isHidden = !openWindow!.isHidden
+        minimizedIcon.isHidden = !openWindow!.isMinimized
+        spaceIcon.isHidden = element.spaceIndex == nil || Spaces.singleSpace || Preferences.hideSpaceNumberLabels
+        if !spaceIcon.isHidden {
+            spaceIcon.setNumber(UInt32(element.spaceIndex!))
+        }
+        let fontIconWidth = CGFloat([minimizedIcon, hiddenIcon, spaceIcon].filter { !$0.isHidden }.count) * (Preferences.fontIconSize + Preferences.interItemPadding)
+        label.textContainer!.size.width = thumbnail.frame.width - Preferences.iconSize! - Preferences.interItemPadding - fontIconWidth
+        self.mouseDownCallback = mouseDownCallback
+        self.mouseMovedCallback = mouseMovedCallback
+        if view.trackingAreas.count > 0 {
+            view.removeTrackingArea(view.trackingAreas[0])
+        }
+        view.addTrackingArea(NSTrackingArea(rect: view.bounds, options: [.mouseMoved, .activeAlways], owner: self, userInfo: nil))
+    }
+
+    static func computeDownscaledSize(_ image: NSImage?, _ screen: NSScreen) -> (Int, Int) {
+        if let image_ = image {
+            let imageRatio = image_.size.width / image_.size.height
+            let thumbnailMaxSize = Screen.thumbnailMaxSize(screen)
+            let thumbnailWidth = Int(floor(thumbnailMaxSize.height * imageRatio))
+            if thumbnailWidth <= Int(thumbnailMaxSize.width) {
+                return (thumbnailWidth, Int(thumbnailMaxSize.height))
+            } else {
+                return (Int(thumbnailMaxSize.width), Int(floor(thumbnailMaxSize.width / imageRatio)))
+            }
+        }
+        return (Int(Preferences.emptyThumbnailWidth), Int((Preferences.emptyThumbnailHeight)))
+    }
+
+    static func makeShadow(_ color: NSColor) -> NSShadow {
+        let shadow = NSShadow()
+        shadow.shadowColor = color
+        shadow.shadowOffset = .zero
+        shadow.shadowBlurRadius = 1
+        return shadow
+    }
+
+    private func makeHStackView() -> NSStackView {
+        let hStackView = NSStackView()
+        hStackView.spacing = Preferences.interItemPadding
+        hStackView.addView(appIcon, in: .leading)
+        hStackView.addView(label, in: .leading)
+        hStackView.addView(hiddenIcon, in: .leading)
+        hStackView.addView(minimizedIcon, in: .leading)
+        hStackView.addView(spaceIcon, in: .leading)
+        return hStackView
+    }
+
+    private func makeVStackView(_ hStackView: NSStackView) -> NSStackView {
+        let vStackView = NSStackView()
+        vStackView.wantsLayer = true
+        vStackView.layer!.backgroundColor = .clear
+        vStackView.layer!.cornerRadius = Preferences.cellCornerRadius!
+        vStackView.layer!.borderWidth = Preferences.cellBorderWidth!
+        vStackView.layer!.borderColor = .clear
+        vStackView.edgeInsets = NSEdgeInsets(top: Preferences.cellPadding, left: Preferences.cellPadding, bottom: Preferences.cellPadding, right: Preferences.cellPadding)
+        vStackView.orientation = .vertical
+        vStackView.spacing = Preferences.interItemPadding
+        vStackView.addView(hStackView, in: .leading)
+        vStackView.addView(thumbnail, in: .leading)
+        return vStackView
     }
 }

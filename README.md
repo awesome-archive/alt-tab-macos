@@ -1,35 +1,66 @@
-# [Download the latest release](https://github.com/lwouis/alt-tab-macos/releases/latest/download/alt-tab-macos.zip)
+# alt-tab-macos
 
-# Purpose
+[![Screenshot](docs/img/alt-tab-macos/frontpage.jpg)](docs/img/alt-tab-macos/frontpage.jpg)
 
-[![Screenshot](docs/img/alt-tab-macos/3%20windows%20-%201%20line.png)](docs/img/alt-tab-macos/3%20windows%20-%201%20line.png)
+**alt-tab-macos** brings the power of Windows' "alt-tab" window switcher to macOS.
 
-`alt-tab-macos` brings the brilliant Windows 10 window switcher (activated by pressing alt-tab) to macOS users.It lets the user switch between windows in a visual way.
+## Installation
 
-On macOS there is an app cycling shortcut which doesn't let you select between windows of an app, and there is Mission Control which doesn't let you navigate using the keyboard.
+[**Download the latest release**](https://github.com/lwouis/alt-tab-macos/releases/latest)
+and extract it in your Applications folder. If macOS refuses to run the application
+because it's from an unidentified developer, right-click the application,
+choose **Open** then click **Open** in the prompt that appears.
 
-# How to use
+## Compatibility
 
-* `control` + `tab` cycles through apps
-* `control` + `shift` + `tab` cycles through apps in reverse
-* Quick press-and-release will cycle through apps without showing any UI
-* Holding `control` after pressing a cycle shortcut will show the UI
-* Releasing `control` or clicking on a window will focus it
+From macOS 10.12 to 10.15
 
-# Screenshots
+## Usage
 
-[![Screenshot](docs/img/alt-tab-macos/5%20windows%20-%202%20lines.png)](docs/img/alt-tab-macos/5%20windows%20-%202%20lines.png)
+* Press `⌥ option` + `⇥ tab` to shows the thumbnails.
+* Hold `⌥ option` and press `⇥ tab` to select the next thumbnail.
+* Hold `⌥ option` and press `⇧ shift` + `⇥ tab` to select the previous thumbnail.
+* Release `⌥ option` to switch focus to the window.
 
-[![Screenshot](docs/img/alt-tab-macos/6%20windows%20-%202%20lines.png)](docs/img/alt-tab-macos/6%20windows%20-%202%20lines.png)
+**Extra:**
 
-[![Screenshot](docs/img/alt-tab-macos/dark-background.png)](docs/img/alt-tab-macos/dark-background.png)
+* You hover and click with the `🖱️ mouse`.
+* You cycle with `⇦ left arrow` and `⇨ right arrow`.
+* You can cancel with `⎋ escape`.
 
-# Features
+## Configuration
 
-* Delay before showing the UI to avoid flashing (default 200ms)
-* High quality thumbnails of all windows
-* Background uses macOS vibrancy UX
-* UI elements have a subtle shadow to ensure readability
-* Window titles will truncate with an ellipsis if they don't fit
-* Thumbnails have a maximum width and height to help visualize very long, tall, small, big windows
-* Fast. There is no benchmark at the moment but energy was spent making sure the UI is responsive
+* Change the shortcut key, switch to a Windows theme and more, using the Preferences window.
+* If you like scriptable/portable configuration, you can edit `~/Library/Preferences/alt-tab-macos.json`.
+
+## Community
+
+Come discuss with us on the [Discord server](https://discord.gg/mHvmcqT).
+
+## Alternatives
+
+Before building my own app, I looked around at similar apps. However, none was completely satisfactory so I rolled my own. Also, the almost-good-enough apps are not open-source.
+
+| Alternative                                                                                 | Differences                                                                                                  |
+|---------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
+| [HyperSwitch](https://bahoom.com/hyperswitch) and [HyperDock](https://bahoom.com/hyperdock) | Closed-source. Thumbnails are too small. App icon is on top of the thumbnail                                 |
+| [WindowSwitcher](https://www.noteifyapp.com/windowswitcher/)                                | 7$. Thumbnails are small and blurry. App icon is on top of the thumbnail                                     |
+| [Switch](https://github.com/numist/Switch)                                                  | Open Source. Thumbnails are small. Very little customization. Latest release is from 2016                     |
+| [Witch](https://manytricks.com/witch/) and [Context](https://contexts.co/)                  | 10-15$. Closed-source. Focus on text. No thumbnails                                                          |
+| Built-in [MissionControl](https://en.wikipedia.org/wiki/Mission_Control_\(macOS\))          | No keyboard support                                                                                          |
+| `⌘ command` + `⇥ tab`                                                                     | Only shows apps, not windows (note: can press down to see window of selected app)                            |
+| `⌘ command` + `` ` ``                                                                      | Cycles through tabs and windows, but only of the same app. Only cycling, no direct access                    |
+
+## Screenshots
+
+### 1 row
+
+[![Screenshot](docs/img/alt-tab-macos/1-row.jpg)](docs/img/alt-tab-macos/1-row.jpg)
+
+### 2 rows
+
+[![Screenshot](docs/img/alt-tab-macos/2-rows.jpg)](docs/img/alt-tab-macos/2-rows.jpg)
+
+### Windows theme
+
+[![Screenshot](docs/img/alt-tab-macos/windows-theme.jpg)](docs/img/alt-tab-macos/windows-theme.jpg)
